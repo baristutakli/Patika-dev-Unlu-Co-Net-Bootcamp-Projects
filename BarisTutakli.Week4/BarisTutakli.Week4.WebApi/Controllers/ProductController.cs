@@ -41,7 +41,8 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpGet("demo")]
         public IActionResult GetLimitedProducts()
         {
-            var result = _productService.GetAll().Result.GetRange(0, 1);
+            var result = _productService.GetAll().Result;
+            result.Data = result.Data.GetRange(0, 1);
             return Ok(result);
         }
 
@@ -50,14 +51,11 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [TypeFilter(typeof(CreateProductActionFilter))]
         [Authorize(Roles = Roles.Admin)]
         [HttpPost]
-        public IActionResult Add(ProductCreateViewModel vm)
+        public async Task<IActionResult> Add(ProductCreateViewModel vm)
         {
-            var result = _productService.Add(vm);
-            if (result.Result < 1)
-            {
-                return BadRequest(new Response { Status = "Failed" });
-            }
-            return Ok(new Response { Status = "Success", Message = "One item Created" });
+            var result = await _productService.Add(vm);
+            return result.Data < 1 ? BadRequest(result) : Ok(result);
+
         }
 
         /// <summary>
@@ -69,7 +67,8 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpGet("{id}")]
         public IActionResult GetProductById(int id)
         {
-            var result = _productService.GetById(new ProductDetailQuery{  Id= id });
+            var result = _productService.GetById(new ProductDetailQuery { Id = id });
+
             if (result is null)
             {
                 return NotFound();
@@ -88,14 +87,10 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpPut("{id}")]
         public IActionResult Update(int id, [FromBody] ProductUpdateModel updateProductModel)
         {
-            var result =_productService.Update(id, updateProductModel);
-            if (result.Result>0)
-            {
-                return Ok(new Response {  Status="Success"});
-            }
-            return StatusCode(StatusCodes.Status400BadRequest,new Response { Status="Error"});
+            var result = _productService.Update(id, updateProductModel);
 
-           
+            return result.Result.Data < 1 ? StatusCode(StatusCodes.Status400BadRequest, result) :
+                Ok(result);
         }
 
 
@@ -108,12 +103,10 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var result= await _productService.Delete(new ProductDetailQuery { Id=id});
-            if (result>0)
-            {
-                return Ok(result);
-            }
-            return BadRequest();//200
+            var result = await _productService.Delete(new ProductDetailQuery { Id = id });
+            return result.Data < 1 ? StatusCode(StatusCodes.Status400BadRequest, result) :
+             Ok(result);
+
         }
 
 

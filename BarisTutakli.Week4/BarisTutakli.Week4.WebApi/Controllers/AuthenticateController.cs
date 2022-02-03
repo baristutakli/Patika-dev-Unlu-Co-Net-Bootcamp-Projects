@@ -22,25 +22,23 @@ namespace BarisTutakli.Week4.WebApi.Controllers
     public class AuthenticateController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IUserService _userService;
         private readonly IConfiguration _configuration;
 
-        public AuthenticateController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+        public AuthenticateController(IUserService userService)
         {
-            _userManager = userManager;
-            _roleManager = roleManager;
-            _configuration = configuration;
+            _userService = userService;
         }
 
         [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login([FromBody] UserLoginModel model)
         {
-            var user = await _userManager.FindByNameAsync(model.Username);
-            if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+            var user = await _userService.FindByNameAsync(model.Username);
+            if (await _userService.CheckUser(user, model))
             {
-                TokenGenerator generator = new TokenGenerator(_userManager,_configuration);
-                var token = await  generator.GenerateToken(user);
+                TokenGenerator generator = new TokenGenerator(_userManager, _configuration);
+                var token = await generator.GenerateToken(user);
                 return Ok(token);
             }
             return Unauthorized();
@@ -50,13 +48,11 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [Route("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserModel model)
         {
-            var userExists = await _userManager.FindByNameAsync(model.Username);
+            var userExists = await _userService.FindByNameAsync(model.Username);
             if (userExists != null)
-                return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "User already exists!" });
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User already exists!" });
 
-            UserService userService = new UserService(_userManager);
-
-            var result = await  userService.CreateUser(model);
+            var result = await _userService.CreateUser(model);
             if (!result.Succeeded)
                 return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "User creation failed! Please check user details and try again." });
 
@@ -68,27 +64,17 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [Route("register-admin")]
         public async Task<IActionResult> RegisterAdmin([FromBody] RegisterUserModel model)
         {
-            var userExists = await _userManager.FindByNameAsync(model.Username);
+            var userExists = await _userService.FindByNameAsync(model.Username);
             if (userExists != null)
                 return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "User already exists!" });
 
 
-            UserService userService = new UserService(_userManager);
-
-            var result = userService.CreateAdmin(model);
+            var result = _userService.CreateAdmin(model);
 
             if (!result.Result.Result.Succeeded)
                 return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "User creation failed! Please check user details and try again." });
 
-            if (!await _roleManager.RoleExistsAsync(Roles.Admin))
-                await _roleManager.CreateAsync(new IdentityRole(Roles.Admin));
-            if (!await _roleManager.RoleExistsAsync(Roles.User))
-                await _roleManager.CreateAsync(new IdentityRole(Roles.User));
-
-            if (await _roleManager.RoleExistsAsync(Roles.Admin))
-            {
-                await _userManager.AddToRoleAsync(result.Result.User, Roles.Admin);
-            }
+            await _userService.CreateAdminRole(result.Result.User, Roles.Admin);
 
             return Ok(new Response { Status = "Success", Message = "User created successfully!" });
         }

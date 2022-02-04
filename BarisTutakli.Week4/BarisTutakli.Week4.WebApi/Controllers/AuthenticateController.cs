@@ -25,9 +25,11 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         private readonly IUserService _userService;
         private readonly IConfiguration _configuration;
 
-        public AuthenticateController(IUserService userService)
+        public AuthenticateController(IUserService userService, UserManager<User> userManager, IConfiguration configuration)
         {
             _userService = userService;
+            _userManager = userManager;
+            _configuration = configuration;
         }
 
         [HttpPost]

@@ -31,9 +31,9 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var result = _productService.GetAll();
+            var productDetailViewList = _productService.GetAll();
 
-            return Ok(result.Result);
+            return Ok(productDetailViewList.Result);
         }
 
 
@@ -41,9 +41,9 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpGet("demo")]
         public IActionResult GetLimitedProducts()
         {
-            var result = _productService.GetAll().Result;
-            result.Data = result.Data.GetRange(0, 1);
-            return Ok(result);
+            var restrictedProductDetailViewList = _productService.GetAll().Result;
+            restrictedProductDetailViewList.Data = restrictedProductDetailViewList.Data.GetRange(0, 1);
+            return Ok(restrictedProductDetailViewList);
         }
 
 
@@ -53,8 +53,8 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Add(ProductCreateViewModel vm)
         {
-            var result = await _productService.Add(vm);
-            return result.Data < 1 ? BadRequest(result) : Ok(result);
+            var affectedRows = await _productService.Add(vm);
+            return affectedRows.Data < 1 ? BadRequest(affectedRows) : Ok(affectedRows);
 
         }
 
@@ -67,13 +67,13 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpGet("{id}")]
         public IActionResult GetProductById(int id)
         {
-            var result = _productService.GetById(new ProductDetailQuery { Id = id });
+            var productViewDetailResponse = _productService.GetById(new ProductDetailQuery { Id = id });
 
-            if (result is null)
+            if (productViewDetailResponse is null)
             {
                 return NotFound();
             }
-            return Ok(result.Result);// return 204 
+            return Ok(productViewDetailResponse.Result);// return 204 
         }
 
 
@@ -87,10 +87,10 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpPut("{id}")]
         public IActionResult Update(int id, [FromBody] ProductUpdateModel updateProductModel)
         {
-            var result = _productService.Update(id, updateProductModel);
+            var affectedRowsResponse = _productService.Update(id, updateProductModel);
 
-            return result.Result.Data < 1 ? StatusCode(StatusCodes.Status400BadRequest, result) :
-                Ok(result);
+            return affectedRowsResponse.Result.Data < 1 ? StatusCode(StatusCodes.Status400BadRequest, affectedRowsResponse) :
+                Ok(affectedRowsResponse);
         }
 
 
@@ -103,14 +103,19 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _productService.Delete(new ProductDetailQuery { Id = id });
-            return result.Data < 1 ? StatusCode(StatusCodes.Status400BadRequest, result) :
-             Ok(result);
+            var affectedRowsResponse = await _productService.Delete(new ProductDetailQuery { Id = id });
+            return affectedRowsResponse.Data < 1 ? StatusCode(StatusCodes.Status400BadRequest, affectedRowsResponse) :
+             Ok(affectedRowsResponse);
 
         }
 
 
-
+        [HttpGet]
+        public async Task<IActionResult> GetAll([FromQuery] PaginationFilter filter)
+        {
+            var PagedResponseList = await  _productService.GetAll(filter);
+            return Ok(PagedResponseList);
+        }
 
         ///// <summary>
         ///// Update the category of a product

@@ -1,4 +1,4 @@
-# 4. hafta
+# 4. hafta + Pagination
 
 Restful api oluşturun
 - Api tekrardan sıfırdan oluşturuldu
@@ -13,12 +13,14 @@ Restful api oluşturun
 * Kullanıcı kaydı ve giriş işlemşleri için **AuthenticateController** oluşturuldu. 
 * Token oluşturmak için **TokenGenerator** sınıfı oluşturuldu.
 * Kullanıcı yekisine göre rolü göz önüne alınarak metotlara erişimi kısıtlandı.
+* Oluşturduğum User modeli Microsoft.AspNetCore.Identity içindeki IdentityUser nesnesinden kalıtım almaktadır.
 * Yekisiz kullanıcılara ise sadece kısıtlı ürünü görebilme olanağı tanındı.
 * DTO lar kullanılarak Mmodellerimize erişimi sınırlayarak istediğimiz şekilde veri alma gönderme işlemleri yapıldı.
 
 
 ### Filters
-````c#
+
+```c#
 public class CreateProductActionFilter :IActionFilter
 {
     private DateTime _requestTime { get; set; }
@@ -34,6 +36,9 @@ public class CreateProductActionFilter :IActionFilter
     {
         _requestTime = DateTime.Now;
     }
-
 }
+
 ```
+
+### Pagination 
+PagedResponse ve PaginationFilter sınıfları sınırlı sayıda öğeyi sayfalayarak göndermek için oluşturuldu. Bunun için Controller'dan filtreleri ```[fromQuery]``` den alarak gerekli işlemi productRespository sınıfında gerçekleştirdim.

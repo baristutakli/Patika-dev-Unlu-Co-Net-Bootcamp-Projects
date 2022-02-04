@@ -23,9 +23,9 @@ namespace BarisTutakli.Week4.WebApi.Business
         {
             ProductCreateViewModelValidator validator = new ProductCreateViewModelValidator();
             validator.ValidateAndThrow(vm);
-            var result = await _repository.Add(new Product { CategoryId = vm.CategoryId, ProductName = vm.ProductName, PublishDate = DateTime.Parse(vm.PublishDate.ToShortDateString()), CreatedAt = DateTime.Parse(DateTime.Now.ToShortDateString()) });
+            var affectedRow = await _repository.Add(new Product { CategoryId = vm.CategoryId, ProductName = vm.ProductName, PublishDate = DateTime.Parse(vm.PublishDate.ToShortDateString()), CreatedAt = DateTime.Parse(DateTime.Now.ToShortDateString()) });
 
-            return result < 1 ? new Response<int> {Data=-1, Succeeded = false, Message = "Failed" } : new Response<int> { Data = result, Succeeded = true, Message = "Added a new product" };
+            return affectedRow < 1 ? new Response<int> {Data=-1, Succeeded = false, Message = "Failed" } : new Response<int> { Data = affectedRow, Succeeded = true, Message = "Added a new product" };
         }
 
         public async Task<Response<int>> Delete(ProductDetailQuery query)
@@ -33,9 +33,9 @@ namespace BarisTutakli.Week4.WebApi.Business
             ProductIdValidator validator = new ProductIdValidator();
             validator.ValidateAndThrow(new ProductDetailQuery { Id = query.Id });
             var selectedItem = _repository.GetById(query.Id);
-            var result = await _repository.Delete(selectedItem.Result);
+            var affectedRow = await _repository.Delete(selectedItem.Result);
 
-            return result < 1 ? new Response<int> { Data = -1, Succeeded = false, Message = "Failed" } : new Response<int> { Data = result, Succeeded = true, Message = "Deleted  the selected product" };
+            return affectedRow < 1 ? new Response<int> { Data = -1, Succeeded = false, Message = "Failed" } : new Response<int> { Data = affectedRow, Succeeded = true, Message = "Deleted  the selected product" };
 
         }
 
@@ -46,9 +46,9 @@ namespace BarisTutakli.Week4.WebApi.Business
 
         public async Task<Response<List<ProductDetailViewModel>>> GetAll()
         {
-            var result = await _repository.GetAll();
+            var productList = await _repository.GetAll();
             List<ProductDetailViewModel> vm = new List<ProductDetailViewModel>();
-            result.ForEach(item => vm.Add(new ProductDetailViewModel
+            productList.ForEach(item => vm.Add(new ProductDetailViewModel
             {
                 Id = item.Id,
                 CategoryId = item.CategoryId,
@@ -66,17 +66,17 @@ namespace BarisTutakli.Week4.WebApi.Business
         {
             ProductIdValidator validator = new ProductIdValidator();
             validator.ValidateAndThrow(query);
-            var result = _repository.GetById(query.Id).Result;
+            var product = _repository.GetById(query.Id).Result;
 
 
             return Task.FromResult(new Response<ProductDetailViewModel>(new ProductDetailViewModel
             {
-                Id = result.Id,
-                CategoryId = result.CategoryId,
-                CreatedAt = result.CreatedAt,
-                ModifiedAt = result.ModifiedAt,
-                ProductName = result.ProductName,
-                PublishDate = result.PublishDate
+                Id = product.Id,
+                CategoryId = product.CategoryId,
+                CreatedAt = product.CreatedAt,
+                ModifiedAt = product.ModifiedAt,
+                ProductName = product.ProductName,
+                PublishDate = product.PublishDate
             }));
 
         }
@@ -90,10 +90,20 @@ namespace BarisTutakli.Week4.WebApi.Business
             product.Result.PublishDate = DateTime.Parse( vm.PublishDate.ToShortDateString());
             product.Result.CategoryId = vm.CategoryId;
             product.Result.ModifiedAt = DateTime.Parse(DateTime.Now.ToShortDateString());
-             var result = await _repository.Update(product.Result);
+             var affectedRow = await _repository.Update(product.Result);
 
-            return result < 1 ? new Response<int> { Data = -1, Succeeded = false, Message = "Failed" } : new Response<int> { Data = result, Succeeded = true, Message = "Updated" };
+            return affectedRow < 1 ? new Response<int> { Data = -1, Succeeded = false, Message = "Failed" } : new Response<int> { Data = affectedRow, Succeeded = true, Message = "Updated" };
 
         }
+
+
+        public async Task<PagedResponse<List<Product>>> GetAll(PaginationFilter filter)
+        {
+           
+            var response = await _repository.Paging(filter);
+
+            return response;
+        }
+
     }
 }

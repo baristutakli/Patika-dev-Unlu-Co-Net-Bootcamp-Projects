@@ -16,5 +16,6 @@ namespace BarisTutakli.Week4.WebApi.Business
         Task<Response<List<ProductDetailViewModel>>> GetAll();
         Task<Response<ProductDetailViewModel>> GetById(ProductDetailQuery query);
         Task<IList<Product>> Get(Expression<Func<Product, bool>> filter);
+        Task<PagedResponse<List<Product>>> GetAll(PaginationFilter filter);
     }
 }

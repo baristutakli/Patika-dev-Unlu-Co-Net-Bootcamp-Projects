@@ -47,6 +47,7 @@ namespace BarisTutakli.Week4.WebApi
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<UserManager<User>>();
 
             services.AddSingleton<ILoggerService, DBLogger>();
 

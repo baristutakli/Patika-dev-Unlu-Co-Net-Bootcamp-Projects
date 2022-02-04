@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
+
 namespace BarisTutakli.Week4.WebApi.DataAccess.ProductDal
 {
     public class ProductRepository : IProductRepository
@@ -30,6 +31,21 @@ namespace BarisTutakli.Week4.WebApi.DataAccess.ProductDal
             _dbSet.Remove(product);
             return await _context.SaveChangesAsync();
 
+        }
+
+        public async Task<PagedResponse<List<Product>>> Paging(PaginationFilter filter)
+        {
+            var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
+            var pagedData = await _dbSet
+                .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
+                .Take(validFilter.PageSize)
+                .ToListAsync();
+            var totalRecords = await _dbSet.CountAsync();
+            PagedResponse<List<Product>> pagedResponse = new PagedResponse<List<Product>>(pagedData, validFilter.PageNumber, validFilter.PageSize);
+            pagedResponse.Message = "Pagination";
+            pagedResponse.TotalRecords = totalRecords;
+            
+            return pagedResponse;
         }
 
         public async Task<IList<Product>> Get(Expression<Func<Product, bool>> filter)

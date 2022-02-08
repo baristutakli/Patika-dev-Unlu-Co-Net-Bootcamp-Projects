@@ -19,12 +19,16 @@ namespace BarisTutakli.Week4.WebApi.Controllers
     public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
+        private readonly IHttpContextAccessor _contextAccessor;
 
-        public ProductController(IProductService productService)
+        public ProductController(IProductService productService, IHttpContextAccessor contextAccessor)
         {
             _productService = productService;
+            _contextAccessor = contextAccessor;
         }
+       
 
+      
 
         // Kullanıcılar ürünlerin listesini görüntüleyebilir
         [Authorize(Roles = Roles.User)]
@@ -44,6 +48,18 @@ namespace BarisTutakli.Week4.WebApi.Controllers
             var restrictedProductDetailViewList = _productService.GetAll().Result;
             restrictedProductDetailViewList.Data = restrictedProductDetailViewList.Data.GetRange(0, 1);
             return Ok(restrictedProductDetailViewList);
+        }
+
+
+        [HttpGet("paging")]
+        public async Task<IActionResult> GetAll([FromQuery] PaginationFilter filter)
+        {
+            // Base url adresini aldıktan sonra base url adresine göre gerekli sayfalandırma gönlendirmelrini yapıyorum.
+            string value = $"{_contextAccessor.HttpContext.Request.Scheme}://{_contextAccessor.HttpContext.Request.Host}" +
+                $"{_contextAccessor.HttpContext.Request.Path}";
+            
+               var PagedResponseList = await _productService.GetAll(filter,value);
+            return Ok(PagedResponseList);
         }
 
 
@@ -110,12 +126,6 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         }
 
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] PaginationFilter filter)
-        {
-            var PagedResponseList = await  _productService.GetAll(filter);
-            return Ok(PagedResponseList);
-        }
 
         ///// <summary>
         ///// Update the category of a product

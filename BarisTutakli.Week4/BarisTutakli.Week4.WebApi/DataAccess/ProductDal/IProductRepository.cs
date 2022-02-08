@@ -15,7 +15,7 @@ namespace BarisTutakli.Week4.WebApi.DataAccess.ProductDal
         Task<List<Product>> GetAll();
         Task<Product> GetById(int id);
         Task<IList<Product>> Get(Expression<Func<Product, bool>> filter);
-        Task<PagedResponse<List<Product>>> Paging(PaginationFilter filter);
+        Task<PagedResponse<List<Product>>> Paging(PaginationFilter filter, string root);
 
     }
 }

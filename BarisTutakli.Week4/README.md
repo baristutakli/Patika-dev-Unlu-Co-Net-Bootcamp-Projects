@@ -1,5 +1,5 @@
 # 4. hafta + Pagination
-
+Sayfalandırma işlemine ilgili sayfaların yönlendirme işlemi yapıldı
 Restful api oluşturun
 - Api tekrardan sıfırdan oluşturuldu
 - Kullanıcı işlemleri için Asp.NET Core Identity altyapısını kullanıldı

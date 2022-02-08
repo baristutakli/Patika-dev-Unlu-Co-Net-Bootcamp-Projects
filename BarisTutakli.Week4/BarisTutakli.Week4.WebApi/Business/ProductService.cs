@@ -97,10 +97,10 @@ namespace BarisTutakli.Week4.WebApi.Business
         }
 
 
-        public async Task<PagedResponse<List<Product>>> GetAll(PaginationFilter filter)
+        public async Task<PagedResponse<List<Product>>> GetAll(PaginationFilter filter,string root)
         {
            
-            var response = await _repository.Paging(filter);
+            var response = await _repository.Paging(filter,root);
 
             return response;
         }

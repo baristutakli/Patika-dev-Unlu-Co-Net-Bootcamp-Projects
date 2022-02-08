@@ -12,12 +12,12 @@ namespace BarisTutakli.Week4.WebApi.Models
         public PaginationFilter()
         {
             this.PageNumber = 1;
-            this.PageSize = 8;
+            this.PageSize = 10;
         }
         public PaginationFilter(int pageNumber, int pageSize)
         {
             this.PageNumber = pageNumber < 1 ? 1 : pageNumber;
-            this.PageSize = pageSize > 8 ? 8 : pageSize;
+            this.PageSize = pageSize > 10 ? 10 : pageSize;
         }
     }
 }

@@ -81,6 +81,13 @@ namespace BarisTutakli.Week4.WebApi
                 };
             });
             services.AddHttpContextAccessor();
+            services.AddMemoryCache();
+            services.AddResponseCaching();
+            services.AddDistributedRedisCache(option =>
+            {
+                option.Configuration = "localhost:6379";
+            });
+            services.AddScoped<IDisributedCacheRedisService, RedisCacheService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -94,6 +101,7 @@ namespace BarisTutakli.Week4.WebApi
             }
 
             app.UseRouting();
+            app.UseResponseCaching();
             app.UseAuthentication();
 
             app.UseAuthorization();

@@ -1,14 +1,19 @@
 ﻿using BarisTutakli.Week4.WebApi.Business;
 using BarisTutakli.Week4.WebApi.Business.ViewModels;
 using BarisTutakli.Week4.WebApi.Models;
+using BarisTutakli.Week4.WebApi.Services.Abstract;
 using BarisTutakli.Week4.WebApi.Services.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace BarisTutakli.Week4.WebApi.Controllers
@@ -20,14 +25,22 @@ namespace BarisTutakli.Week4.WebApi.Controllers
     {
         private readonly IProductService _productService;
         private readonly IHttpContextAccessor _contextAccessor;
-
-        public ProductController(IProductService productService, IHttpContextAccessor contextAccessor)
+        private readonly IMemoryCache _memoryCache;
+        private readonly IDistributedCache _distributedCache;
+        private readonly IDisributedCacheRedisService _distributedCacheService;
+        public ProductController(IProductService productService, 
+            IHttpContextAccessor contextAccessor,
+            IMemoryCache memoryCache, IDistributedCache distributedCache,
+            IDisributedCacheRedisService distributedCacheService
+            )
         {
             _productService = productService;
             _contextAccessor = contextAccessor;
+            _memoryCache = memoryCache;
+            _distributedCache = distributedCache;
+            _distributedCacheService = distributedCacheService;
         }
        
-
       
 
         // Kullanıcılar ürünlerin listesini görüntüleyebilir
@@ -41,25 +54,63 @@ namespace BarisTutakli.Week4.WebApi.Controllers
         }
 
 
-        // Herkes sınırlı sayıda ürüne ulaşabilir
+        // Yetkisi olmayan herkes sınırlı sayıda ürüne ulaşabilir
+        // In cache memory de demo veri tutldu
         [HttpGet("demo")]
         public IActionResult GetLimitedProducts()
         {
+            if (_memoryCache.TryGetValue("Samsung", out Response<List<ProductDetailViewModel>> productList))
+            {
+                return Ok(productList);
+            }
             var restrictedProductDetailViewList = _productService.GetAll().Result;
             restrictedProductDetailViewList.Data = restrictedProductDetailViewList.Data.GetRange(0, 1);
+            _memoryCache.Set("Samsung", restrictedProductDetailViewList.Data);
+
             return Ok(restrictedProductDetailViewList);
         }
+        [ResponseCache(Duration =30, NoStore = false, Location = ResponseCacheLocation.Client,VaryByHeader = "unknown user")]
+        [HttpGet("help")]
+        public IActionResult GetHelp()
+        {
+            string message = JsonSerializer.Serialize($"Demo endpoint sınırlı bilgi sunar. Diğer end pointlere erişim için üye olmanız ve yetkinizin olması gerekir." +
+                $"Üye olmak için Authenticates/Register adresini kullanınız.");
+            if (_memoryCache.TryGetValue("Help", out string response))
+            {
+                return Ok(response);
+            }
+     
+            _memoryCache.Set("Help", message);
 
+            return Ok(message);
+        }
 
+        // Taleb 100 adedi aştığı zaman cache olarak redise yazan servisi oluşturdum.
         [HttpGet("paging")]
         public async Task<IActionResult> GetAll([FromQuery] PaginationFilter filter)
         {
             // Base url adresini aldıktan sonra base url adresine göre gerekli sayfalandırma gönlendirmelrini yapıyorum.
             string value = $"{_contextAccessor.HttpContext.Request.Scheme}://{_contextAccessor.HttpContext.Request.Host}" +
                 $"{_contextAccessor.HttpContext.Request.Path}";
+            string productsCacheKey = "products";
             
-               var PagedResponseList = await _productService.GetAll(filter,value);
-            return Ok(PagedResponseList);
+            if (filter.PageSize*10>100)
+            {
+
+                var cachedItem = await _distributedCacheService.GetCachedProducts(productsCacheKey);
+                if (cachedItem is not null)
+                {
+                    return Ok(cachedItem);
+                }
+
+            }
+            
+               var pagedResponseList = await _productService.GetAll(filter,value);
+               var options = new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(DateTime.Now.AddHours(5));
+
+            await _distributedCacheService.SetProductsToCache(productsCacheKey, pagedResponseList.Data, options);
+            return Ok(pagedResponseList);
         }
 
 
